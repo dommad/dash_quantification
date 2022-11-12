@@ -95,9 +95,9 @@ class Quantify:
         """retrieve data for given protein;
         to prevent failure of Welch's t test in case of nearly identical data,
         we may need to add some noise to the data"""
-        data = [2**x[prot][mode_idx] for x in master_list]
+        data = [2**float(x[prot][mode_idx]) for x in master_list]
         if len(set(data)) == 1:
-            return [x + random.random()*min(data)*0.001 for x in data]
+            return [x + random.random()*min(data)*0.0001 for x in data]
         return data
 
     @staticmethod

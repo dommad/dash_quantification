@@ -17,8 +17,8 @@ def get_res(files, imput=""):
     return results
 
 # load data from the files
-files1 = ("interact-f10.ipro.prot.xml", "interact-f10.ipro.prot.xml")
-files2 = ("interact-f07.ipro.prot.xml", "interact-f07.ipro.prot.xml")
+files1 = ("interact-f10.ipro.prot.xml", "interact-f42.ipro.prot.xml")
+files2 = ("interact-f07.ipro.prot.xml", "interact-f09.ipro.prot.xml")
 f10 = get_res(files1)
 f07 = get_res(files2)
 f10_ave = get_res(files1, imput="Average")
@@ -58,10 +58,10 @@ app.layout = html.Div(
     html.Br(),
     html.H2("Select log2(fold change) (absolute)"),
     dcc.Slider(id='select-fold-change',
-            min=1,
+            min=0,
             max=5,
-            marks={i: str(i) for i in np.linspace(1, 5, 9)},
-            value=1,
+            marks={i: str(i) for i in np.linspace(0, 5, 11)},
+            value=1.5,
         ),
     html.Br(),
     html.H2("Select imputation method for missing values"),
