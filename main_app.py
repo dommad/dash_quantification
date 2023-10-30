@@ -1,28 +1,32 @@
 """Dash app for label-free quantification of proteomics data"""
-from dash import Dash, dcc, html, dash_table, Input, Output
+from dash import Dash, dcc, html, dash_table, Input, Output, State
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
 import quantify as qu
 
+
+
+
 app = Dash(__name__)
 
-def get_res(files, imput=""):
+
+#app = Dash(__name__)
+
+
+def get_res(files, impute_method="average"):
     """combine results from multiple files"""
-    option = 1
-    if imput == "Average":
-        option = 0
-    results = qu.Quantify().combine_replicates(files)
-    qu.Quantify().imput_missing(results, option=option)
+    results = qu.Quantify().generate_master_dict(files, impute_method)
     return results
 
 # load data from the files
-files1 = ("interact-f10.ipro.prot.xml", "interact-f42.ipro.prot.xml")
-files2 = ("interact-f07.ipro.prot.xml", "interact-f09.ipro.prot.xml")
-f10 = get_res(files1)
-f07 = get_res(files2)
-f10_ave = get_res(files1, imput="Average")
-f07_ave = get_res(files2, imput="Average")
+controls_files = ("interact-f07.ipro.prot.xml", "interact-f09.ipro.prot.xml")
+treatments_files = ("interact-f10.ipro.prot.xml", "interact-f42.ipro.prot.xml")
+
+controls_min = get_res(controls_files, impute_method="minimum")
+treatments_min = get_res(treatments_files,impute_method="minimum")
+controls_ave = get_res(controls_files, impute_method="average")
+treatments_ave = get_res(treatments_files, impute_method="average")
 
 app = Dash(__name__)
 
@@ -36,6 +40,11 @@ app.layout = html.Div(
     children=[
     html.H1("Quantification of Proteomics Data"),
     html.Br(),
+    html.H2("Select Input files"),
+    dcc.Input(
+        'testing',
+        id='input-control-files'
+        ),
     html.H2("Quantification method"),
     dcc.RadioItems(
         ['NSAF', 'SI'],
@@ -50,7 +59,7 @@ app.layout = html.Div(
         marks=dict(
             zip(
                 np.linspace(0, 0.05, 11),
-                [str(i) for i in np.linspace(0, 0.05, 11)]
+                [str(i) for i in np.linspace(0, 0.1, 11)]
                 )
                 ),
         value=0.01
@@ -89,9 +98,18 @@ app.layout = html.Div(
                     'margin-right': '20px',
                     'margin-top': '20px'},
                 id='data-table'
-                    )
+                    ),
+
+            html.Div(id='button-div', children=[html.Button('Export Table', className='button-79',
+                                 id='export-button', n_clicks=0)],
+        style={
+            'margin-left': '20px',
+            'margin-right': '20px',
+            'margin-top': '20px'},
+            ),
 ])]
 )
+
 
 @app.callback(
 [Output('volcano-plot', 'children'),
@@ -100,14 +118,16 @@ Input('select-fdr', 'value'),
 Input('select-fold-change', 'value'),
 Input('select-quant-method', 'value'),
 Input('select-imputation', 'value'))
-def update_volcano(fdr, fold, q_mode, imput):
+def update_volcano(fdr_lim, fold_lim, q_mode, imput):
     """update the volcano plot"""
-    if imput == "Average":
-        new_d = qu.Quantify().welch_test(f10_ave, f07_ave, mode=q_mode)
-    else:
-        new_d = qu.Quantify().welch_test(f10, f07, mode=q_mode)
+    qmodes = {'SI': 'sin', 'NSAF': 'nsaf'}
 
-    sel_data = qu.Quantify().get_stats(new_d, fdr, fold)
+    if imput == "Average":
+        new_d = qu.Quantify().welch_test(controls_ave, treatments_ave, qmodes[q_mode])
+    else:
+        new_d = qu.Quantify().welch_test(controls_min, treatments_min, qmodes[q_mode])
+
+    sel_data = qu.Quantify().get_stats(new_d, fdr_lim, fold_lim)
 
     new_fig = go.Figure(data=[
                         go.Scattergl(
